@@ -28,7 +28,7 @@ class UssdMiddleware
 
             // Generate a new token for subsequent requests if this is the initial request
             if ($isBegin) {
-                $privateSecret = env('ussdSecret');
+           
                 $newPayload = [
                     'userMobileNo' => $tokenData->userMobileNo,
                     'dialogId' => $tokenData->dialogId,
@@ -36,7 +36,7 @@ class UssdMiddleware
                     'timeStamp' => time(),
                     'exp' => time() + 3600 
                 ];
-                $newToken = JWT::encode($newPayload, $privateSecret, 'HS256');
+                $newToken = JWT::encode($newPayload, $jwtSecret, 'HS256');
                 Log::info('New token generated: ' . $newToken);
                 $request->headers->set('Authorization', 'Bearer ' . $newToken);
             }

@@ -10,9 +10,6 @@ use Illuminate\Support\Facades\Http;
 use Throwable;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use phpDocumentor\Reflection\Types\This;
-
-use function Pest\Laravel\json;
 
 class MenuController extends Controller
 {

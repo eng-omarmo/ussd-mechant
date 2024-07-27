@@ -19,5 +19,5 @@ Route::prefix('auth')->group(function () {
 
 // Menu routes
 Route::prefix('merchant')->group(function () {
-    Route::match(['get', 'post'], '/{menuPath}', [MenuController::class, 'readMenu'])->where('menuPath', '.*');
+    Route::match(['get', 'post'], '/{menuPath}', [MenuController::class, 'readMenu'])->where('menuPath', '.*')->middleware('auth.ussd:isbegin');
 });
