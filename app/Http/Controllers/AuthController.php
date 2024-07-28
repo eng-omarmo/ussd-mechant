@@ -21,7 +21,7 @@ class AuthController extends Controller
         ]);
 
         try {
-            $token = JWT::encode($request->only('userMobileNo', 'dialogId', 'channelName'), config('services.ussd.appSecret'), 'HS256');
+            $token = JWT::encode($request->only('userMobileNo', 'dialogId', 'channelName'), config('services.ussd.ussdSecret'), 'HS256');
             return $this->Ok($token);
         } catch (\Exception $e) {
             return $this->error($e->getMessage());

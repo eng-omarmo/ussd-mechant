@@ -25,7 +25,6 @@ class MenuController extends Controller
      */
     public function readMenu(Request $request, $menuPath)
     {
-
         $data = [];
         $token = $request->bearerToken();
 

@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-
 use Closure;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -11,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class UssdMiddleware
 {
-    public function handle(Request $request, Closure $next, $isBegin = null)
+    public function handle(Request $request, Closure $next)
     {
         $authorizationHeader = $request->header('Authorization');
 
@@ -23,8 +22,10 @@ class UssdMiddleware
 
         try {
 
-            $jwtSecret = $isBegin ? config('services.ussd.appSecret') : config('services.ussd.ussdSecret');
-            $tokenData = JWT::decode($token, new Key($jwtSecret, 'HS256'));
+            $tokenData = JWT::decode($token, new Key(config('services.ussd.ussdSecret'), 'HS256'));
+            if (!$tokenData) {
+                $tokenData = JWT::decode($token, new Key(config('services.ussd.appSecret'), 'HS256'));
+            }
             $request->merge((array) $tokenData);
         } catch (\Exception $e) {
             return response()->json(['replyMsg' => 'Service is not available currently, please try again later', 'error' => $e->getMessage()], 401);

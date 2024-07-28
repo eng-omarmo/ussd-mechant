@@ -17,7 +17,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/generate-token', [AuthController::class, 'generateToken'])->name('generateToken');
 });
 
-// Menu routes
+
 Route::prefix('merchant')->group(function () {
-    Route::match(['get', 'post'], '/{menuPath}', [MenuController::class, 'readMenu'])->where('menuPath', '.*')->middleware('auth.ussd:isbegin');
+    Route::match(['get', 'post'], '/{menuPath}', [MenuController::class, 'readMenu'])
+        ->where('menuPath', '.*')
+        ->middleware('auth.ussd:false'); 
 });
+
