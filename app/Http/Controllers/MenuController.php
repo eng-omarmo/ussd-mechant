@@ -33,7 +33,7 @@ class MenuController extends Controller
         }
 
         $payload = $request->all();
-        // dd($this->getToken($token,config('services.ussd.appSecret')));
+
         $menuPath = $request->path();
 
         if (empty($menuPath)) {
@@ -41,23 +41,30 @@ class MenuController extends Controller
         }
         $menuPath = str_replace('api', '', $menuPath);
 
-        if ($request->amount) {
-            $user_id = $this->getUser($payload['userMobileNo']);
-            $data = ['user_id' => $user_id, 'amount' => $request->amount];
-            $data = array_merge($data, $payload);
-        }
+        if ($request->method() != 'get') {
+            $token = $this->getToken($token, config('services.ussd.ussdSecret'));
+            if ($token) {
+                return $this->Unauthorized('forbidden');
+            }
+            $token = $this->getToken($token, config('services.ussd.appSecret'));
 
-        if ($menuPath == '/merchant/customer/get-last-transaction') {
+            if ($request->amount) {
+                $user_id = $this->getUser($payload['userMobileNo']);
+                $data = ['user_id' => $user_id, 'amount' => $request->amount];
+                $data = array_merge($data, $payload);
+            }
 
-            return $this->getLastTransaction($data);
-        }
-        if ($menuPath == '/merchant/customer/make-payment') {
-            return $this->makePayment($data);
-        }
-        if ($menuPath == '/merchant/customer/make-pay-bill') {
-            return $this->makeBill($data);
-        }
+            if ($menuPath == '/merchant/customer/get-last-transaction') {
 
+                return $this->getLastTransaction($data);
+            }
+            if ($menuPath == '/merchant/customer/make-payment') {
+                return $this->makePayment($data);
+            }
+            if ($menuPath == '/merchant/customer/make-pay-bill') {
+                return $this->makeBill($data);
+            }
+        }
         $menuData = MenuUtility::getUrlFromJson($menuPath);
 
         if (!isset($menuData)) {
@@ -143,12 +150,14 @@ class MenuController extends Controller
     function getToken($token, $jwtSecret)
     {
         $decodedToken = JWT::decode($token, new Key($jwtSecret, 'HS256'));
+
         return $decodedToken;
     }
 
     function generateToken($payload)
     {
         $newToken = JWT::encode($payload, config('services.ussd.appSecret'), 'HS256');
+
         return $newToken;
     }
 
