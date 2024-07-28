@@ -14,7 +14,7 @@ trait ApiResponse
     }
     protected function success($data = null, $message = null)
     {
-        return $this->response($data, $message, 200);
+        return $this->response($data, $message, 300);
     }
     protected function error($data = null, $message = null)
     {

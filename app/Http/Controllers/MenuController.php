@@ -24,14 +24,15 @@ class MenuController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function readMenu(Request $request, $menuPath)
-    {
+    { 
+
         $data = [];
         $token = $request->bearerToken();
 
         if (!$token) {
             return $this->Unauthorized();
         }
-
+      
         $payload = $request->all();
 
         $menuPath = $request->path();
@@ -41,8 +42,9 @@ class MenuController extends Controller
         }
         $menuPath = str_replace('api', '', $menuPath);
 
-        if ($request->method() != 'get') {
+        if ($request->method() == 'POST') {
             $token = $this->getToken($token, config('services.ussd.ussdSecret'));
+   
             if ($token) {
                 return $this->Unauthorized('forbidden');
             }
@@ -150,7 +152,6 @@ class MenuController extends Controller
     function getToken($token, $jwtSecret)
     {
         $decodedToken = JWT::decode($token, new Key($jwtSecret, 'HS256'));
-
         return $decodedToken;
     }
 
@@ -166,10 +167,5 @@ class MenuController extends Controller
     {
         $user = DB::table('users')->where('formattedPhone', $userMobileNo)->first();
         return $user->id ?? null;
-    }
-    function getPhone($userId)
-    {
-        $user = DB::table('users')->where('id', $userId)->first();
-        return $user->formattedPhone ?? null;
     }
 }

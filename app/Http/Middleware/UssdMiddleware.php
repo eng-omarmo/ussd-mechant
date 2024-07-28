@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class UssdMiddleware
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next, $isBegin = false)
     {
         $authorizationHeader = $request->header('Authorization');
 
@@ -20,12 +20,18 @@ class UssdMiddleware
 
         $token = str_replace('Bearer ', '', $authorizationHeader);
 
-        try {
+        $tokenData = null;
+        $JWT_SECRET = null;
 
-            $tokenData = JWT::decode($token, new Key(config('services.ussd.ussdSecret'), 'HS256'));
-            if (!$tokenData) {
-                $tokenData = JWT::decode($token, new Key(config('services.ussd.appSecret'), 'HS256'));
+
+        try {
+            if (!$isBegin) {
+                $JWT_SECRET = config('services.ussd.ussdSecret');
+            } else {
+                $JWT_SECRET = config('services.ussd.appSecret');
             }
+            $tokenData = JWT::decode($token, new Key($JWT_SECRET, 'HS256'));
+
             $request->merge((array) $tokenData);
         } catch (\Exception $e) {
             return response()->json(['replyMsg' => 'Service is not available currently, please try again later', 'error' => $e->getMessage()], 401);
