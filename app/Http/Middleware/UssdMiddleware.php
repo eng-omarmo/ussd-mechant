@@ -20,26 +20,12 @@ class UssdMiddleware
         }
 
         $token = str_replace('Bearer ', '', $authorizationHeader);
-        $jwtSecret = $isBegin ? config('services.ussd.appSecret') : config('services.ussd.ussdSecret'); 
 
         try {
+
+            $jwtSecret = $isBegin ? config('services.ussd.appSecret') : config('services.ussd.ussdSecret');
             $tokenData = JWT::decode($token, new Key($jwtSecret, 'HS256'));
             $request->merge((array) $tokenData);
-
-            // Generate a new token for subsequent requests if this is the initial request
-            if ($isBegin) {
-           
-                $newPayload = [
-                    'userMobileNo' => $tokenData->userMobileNo,
-                    'dialogId' => $tokenData->dialogId,
-                    'channelName' => $tokenData->channelName,
-                    'timeStamp' => time(),
-                    'exp' => time() + 3600 
-                ];
-                $newToken = JWT::encode($newPayload, $jwtSecret, 'HS256');
-                Log::info('New token generated: ' . $newToken);
-                $request->headers->set('Authorization', 'Bearer ' . $newToken);
-            }
         } catch (\Exception $e) {
             return response()->json(['replyMsg' => 'Service is not available currently, please try again later', 'error' => $e->getMessage()], 401);
         }

@@ -28,11 +28,13 @@ class MenuController extends Controller
 
         $data = [];
         $token = $request->bearerToken();
+
         if (!$token) {
             return $this->Unauthorized();
         }
-        $payload = $this->getToken($request);
 
+        $payload = $request->all();
+        // dd($this->getToken($token,config('services.ussd.appSecret')));
         $menuPath = $request->path();
 
         if (empty($menuPath)) {
@@ -41,12 +43,9 @@ class MenuController extends Controller
         $menuPath = str_replace('api', '', $menuPath);
 
         if ($request->amount) {
-            $data = [
-                'user_id' => $this->getUser($payload->userMobileNo),
-                'amount' => $request->amount,
-                'channelName' => $payload->channelName,
-                'dialogId' => $payload->dialogId
-            ];
+            $user_id = $this->getUser($payload['userMobileNo']);
+            $data = ['user_id' => $user_id, 'amount' => $request->amount];
+            $data = array_merge($data, $payload);
         }
 
         if ($menuPath == '/merchant/customer/get-last-transaction') {
@@ -66,7 +65,7 @@ class MenuController extends Controller
             return $this->NotFound('No data found', 'Menu not found.');
         }
 
-        $newToken = $this->generateToken($request, $payload);
+        $newToken = $this->generateToken($payload);
 
         return  $this->Ok($menuData)->header('Authorization', $newToken);
     }
@@ -75,11 +74,13 @@ class MenuController extends Controller
     function makePayment($data)
     {
         try {
+
+            $token = $this->generateToken($data);
             $walletBalance = $this->checkBalance($data);
             if (!$walletBalance) {
                 return $this->error('insufficient balance');
             }
-            $token = $this->getToken($data);
+
             $response = Http::withToken($token)->post(config('services.url.sendMoney'), $data)->json();
             if ($response->failed()) {
                 return $this->error($response->json());
@@ -96,7 +97,7 @@ class MenuController extends Controller
     {
         try {
             $walletBalance = $this->checkBalance($data);
-            $token = $this->getToken($data);
+            $token = $this->generateToken($data);
             if (!$walletBalance) {
                 return $this->error('insufficient balance', $token);
             }
@@ -124,8 +125,7 @@ class MenuController extends Controller
             }
             $transactions = DB::table('transactions')->where('user_id', $data['user_id'])->orderBy('id', 'desc')->first();
 
-            $newPayloadObject = (object) $data;
-            $newToken = $this->generateToken($newPayloadObject);
+            $newToken = $this->generateToken($data);
 
             return $this->ok($transactions, 'last transaction found')->header('Authorization', $newToken);
         } catch (\Exception $e) {
@@ -141,28 +141,15 @@ class MenuController extends Controller
         return true;
     }
 
-    function getToken($request)
+    function getToken($token, $jwtSecret)
     {
-        $authorizationHeader = $request->header('Authorization');
-        if (!$authorizationHeader || !str_starts_with($authorizationHeader, 'Bearer')) {
-            return $this->Unauthorized('Authorization token is missing or invalid.');
-        }
-        $token = str_replace('Bearer ', '', $authorizationHeader);
-        $decodedToken = JWT::decode($token, new Key(config('services.ussd.appSecret'), 'HS256'));
-
+        $decodedToken = JWT::decode($token, new Key($jwtSecret, 'HS256'));
         return $decodedToken;
     }
 
     function generateToken($payload)
     {
-        $newPayload = [
-            'userMobileNo' => $this->getPhone($payload->user_id),
-            'dialogId' => $payload->dialogId,
-            'channelName' => $payload->channelName,
-            'timeStamp' => time(),
-            'exp' => time() + 3600
-        ];
-        $newToken = JWT::encode($newPayload, config('services.ussd.appSecret'), 'HS256');
+        $newToken = JWT::encode($payload, config('services.ussd.appSecret'), 'HS256');
         return $newToken;
     }
 
